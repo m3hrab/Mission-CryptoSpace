@@ -1,0 +1,5 @@
+1. Main Prototype with key features of the game
+2. Make it completely Playable functional game with menu, how to play, game over , win screen
+3. Add Sounds Effect and Smooth HUD, Text Animation, Transition
+4. ADD Visuals(Cutsence, UI)
+5. Optimization and Final testing
