@@ -88,6 +88,8 @@ class UIManager:
         self.last_flicker = 0
         self.flicker_interval = 2000
         self.music_playing = False
+        self.ambience_playing = False
+        self.low_oxygen_channel = None
         self.tooltip = ""
         self.tooltip_alpha = 0
         self.tooltip_start = 0
@@ -102,6 +104,62 @@ class UIManager:
         self.tooltip = tooltip
         self.tooltip_start = pygame.time.get_ticks()
         self.tooltip_alpha = 0
+
+    def play_menu_music(self):
+        if not self.music_playing and os.path.exists(MENU_MUSIC):
+            try:
+                pygame.mixer.music.load(MENU_MUSIC)
+                pygame.mixer.music.set_volume(0.3)
+                pygame.mixer.music.play(-1)
+                self.music_playing = True
+            except pygame.error:
+                pass
+
+    def stop_music(self):
+        if self.music_playing:
+            pygame.mixer.music.stop()
+            self.music_playing = False
+
+    def play_gameplay_ambience(self):
+        if not self.ambience_playing and os.path.exists(STATION_AMBIENCE):
+            try:
+                pygame.mixer.music.load(STATION_AMBIENCE)
+                pygame.mixer.music.set_volume(0.2)
+                pygame.mixer.music.play(-1)
+                self.ambience_playing = True
+            except pygame.error:
+                pass
+
+    def stop_gameplay_ambience(self):
+        if self.ambience_playing:
+            pygame.mixer.music.stop()
+            self.ambience_playing = False
+
+    def play_low_oxygen_alert(self):
+        if not self.low_oxygen_channel and os.path.exists(LOW_OXYGEN_ALERT):
+            try:
+                sound = pygame.mixer.Sound(LOW_OXYGEN_ALERT)
+                self.low_oxygen_channel = pygame.mixer.Channel(1)
+                self.low_oxygen_channel.set_volume(0.6)
+                self.low_oxygen_channel.play(sound, loops=-1)
+            except pygame.error:
+                pass
+
+    def stop_low_oxygen_alert(self):
+        if self.low_oxygen_channel:
+            self.low_oxygen_channel.stop()
+            self.low_oxygen_channel = None
+
+    def play_sound(self, sound_file, volume):
+        if os.path.exists(sound_file):
+            try:
+                sound = pygame.mixer.Sound(sound_file)
+                channel = pygame.mixer.find_channel()
+                if channel:
+                    channel.set_volume(volume)
+                    channel.play(sound)
+            except pygame.error:
+                pass
 
     def update(self):
         for particle in self.particles:
@@ -123,30 +181,12 @@ class UIManager:
                 self.tooltip_alpha = max(0, 255 - int(255 * elapsed / TOOLTIP_FADE_DURATION))
                 if self.tooltip_alpha == 0:
                     self.tooltip = ""
-
-    def play_menu_music(self):
-        if not self.music_playing and os.path.exists(MENU_MUSIC):
-            try:
-                pygame.mixer.music.load(MENU_MUSIC)
-                pygame.mixer.music.set_volume(0.3)
-                pygame.mixer.music.play(-1)
-                self.music_playing = True
-            except pygame.error:
-                pass
-
-    def stop_menu_music(self):
-        if self.music_playing:
-            pygame.mixer.music.stop()
-            self.music_playing = False
-
-    def play_interact_sound(self):
-        if os.path.exists(INTERACT_SOUND):
-            try:
-                sound = pygame.mixer.Sound(INTERACT_SOUND)
-                sound.set_volume(0.5)
-                sound.play()
-            except pygame.error:
-                pass
+        if self.gm.game_state == STATE_GAMEPLAY and not self.ambience_playing:
+            self.play_gameplay_ambience()
+        if self.gm.game_state == STATE_GAMEPLAY and self.gm.player.oxygen <= VIGNETTE_THRESHOLD and not self.low_oxygen_channel:
+            self.play_low_oxygen_alert()
+        elif self.gm.game_state != STATE_GAMEPLAY or self.gm.player.oxygen > VIGNETTE_THRESHOLD:
+            self.stop_low_oxygen_alert()
 
     def draw_mini_map(self, surface):
         center = (WIDTH - MINI_MAP_RADIUS - 20, MINI_MAP_RADIUS + 20)
@@ -155,15 +195,15 @@ class UIManager:
         surface.blit(map_surface, (center[0] - MINI_MAP_RADIUS, center[1] - MINI_MAP_RADIUS))
         pygame.draw.circle(surface, NEON_CYAN, center, MINI_MAP_RADIUS, 2)
         room_positions = {
-            "control_room": (0, -MINI_MAP_RADIUS // 2),
-            "lab_room": (0, 0),
-            "distress_room": (0, MINI_MAP_RADIUS // 2)
+            "control_room": (0, -MINI_MAP_RADIUS * 0.6),  # Top
+            "lab_room": (0, 0),                          # Center
+            "distress_room": (0, MINI_MAP_RADIUS * 0.6)  # Bottom
         }
         current_room_key = self.gm.current_room.name.lower().replace(" ", "_")
         for room_key, (dx, dy) in room_positions.items():
             pos = (center[0] + dx, center[1] + dy)
             color = NEON_GREEN if room_key == current_room_key else NEON_BLUE
-            pygame.draw.circle(surface, color, pos, MINI_MAP_RADIUS // 6)
+            pygame.draw.circle(surface, color, pos, 8)  # Larger dots for visibility
         font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_SM)
         label = font.render("RADAR", True, NEON_WHITE)
         surface.blit(label, (center[0] - label.get_width() // 2, center[1] + MINI_MAP_RADIUS + 5))
@@ -195,7 +235,7 @@ class UIManager:
             font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_MD)
             message_surface = font.render(self.message, True, self.message_color)
             message_surface.set_alpha(self.message_alpha)
-            surface.blit(message_surface, (WIDTH // 2 - message_surface.get_width() // 2, HEIGHT - 60))
+            surface.blit(message_surface, (WIDTH // 2 - message_surface.get_width() // 2, HEIGHT - 30))
         if self.tooltip and self.tooltip_alpha > 0:
             font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_MD)
             tooltip_surface = font.render(self.tooltip, True, NEON_CYAN)
@@ -218,10 +258,10 @@ class UIManager:
         pygame.draw.rect(self.gm.screen, NEON_CYAN, rect, 3, border_radius=10)
         font_xl = pygame.font.Font(FONT_BOLD, FONT_SIZE_XL)
         title = font_xl.render("Crypternity", True, NEON_WHITE if self.flicker_state else NEON_CYAN)
-        self.gm.screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 4 + 30))
-        font_md = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_MD)
-        subtitle = font_md.render("Martian Decipher", True, NEON_CYAN)
-        self.gm.screen.blit(subtitle, (WIDTH // 2 - subtitle.get_width() // 2, HEIGHT // 4 + 30 + font_xl.get_height() + 10))
+        self.gm.screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 4 ))
+        # font_md = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_MD)
+        # subtitle = font_md.render("Martian Decipher", True, NEON_CYAN)
+        # self.gm.screen.blit(subtitle, (WIDTH // 2 - subtitle.get_width() // 2, HEIGHT // 4 + 30 + font_xl.get_height() + 10))
         for button in buttons:
             button.update()
             button.draw(self.gm.screen)
@@ -259,7 +299,7 @@ class UIManager:
         restart_button.draw(self.gm.screen)
         exit_text = font_md.render("Press ESC to exit", True, NEON_WHITE)
         self.gm.screen.blit(exit_text, (WIDTH // 2 - exit_text.get_width() // 2, HEIGHT // 2 + 100))
-        self.stop_menu_music()
+        self.stop_music()
 
     def draw_win_screen(self, restart_button):
         self.gm.screen.fill(NEON_BLACK)
@@ -275,4 +315,4 @@ class UIManager:
         restart_button.draw(self.gm.screen)
         exit_text = font_md.render("Press ESC to exit", True, NEON_WHITE)
         self.gm.screen.blit(exit_text, (WIDTH // 2 - exit_text.get_width() // 2, HEIGHT // 2 + 100))
-        self.stop_menu_music()
+        self.stop_music()

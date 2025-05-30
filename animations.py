@@ -1,6 +1,7 @@
 import pygame
 from config import *
-from helpers import wrap_text  # Added import for wrap_text
+from helpers import wrap_text
+from ui_elements import Button
 
 class CutsceneManager:
     def __init__(self, game_manager):
@@ -11,6 +12,10 @@ class CutsceneManager:
         self.text_progress = 0
         self.last_char_time = 0
         self.font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_MD)
+        self.skip_button = Button(
+            WIDTH - 150, HEIGHT - 80, 100, 40, "Skip",
+            lambda: self.gm.start_gameplay() if self.current_cutscene == INTRO_CUTSCENE else self.gm.show_win_screen()
+        )
 
     def start_cutscene(self, cutscene_lines):
         self.current_cutscene = cutscene_lines
@@ -19,8 +24,11 @@ class CutsceneManager:
         self.text_progress = 0
         self.last_char_time = pygame.time.get_ticks()
         self.gm.set_game_state(STATE_CUTSCENE_INTRO if cutscene_lines == INTRO_CUTSCENE else STATE_CUTSCENE_OUTRO)
+        self.gm.ui_manager.play_sound(CUTSCENE_THEME, 0.4)
 
     def handle_event(self, event):
+        if self.skip_button.handle_event(event):
+            return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             if self.current_line < len(self.current_cutscene) - 1:
                 self.current_line += 1
@@ -44,6 +52,7 @@ class CutsceneManager:
                     self.last_char_time = current_time
                 else:
                     self.last_char_time = current_time
+        self.skip_button.update()
 
     def draw(self, surface):
         surface.fill(NEON_BLACK)
@@ -55,3 +64,4 @@ class CutsceneManager:
             y = wrap_text(surface, self.current_text, self.font, NEON_WHITE, message_rect)
             prompt = self.font.render("Press SPACE to continue", True, NEON_CYAN)
             surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, HEIGHT - 50))
+            self.skip_button.draw(surface)

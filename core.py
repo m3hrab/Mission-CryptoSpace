@@ -87,7 +87,7 @@ class Door(pygame.sprite.Sprite):
                 self.pulse_start = 0
 
     def interact(self, player, game_manager):
-        game_manager.ui_manager.play_interact_sound()
+        game_manager.ui_manager.play_sound(INTERACT_SOUND, 0.5)
         if not self.is_locked:
             game_manager.set_game_message("Door Unlocked! Transitioning...", NEON_ORANGE)
             if self.target_room == "win_room":
@@ -99,17 +99,11 @@ class Door(pygame.sprite.Sprite):
         else:
             game_manager.set_game_message("Door Locked. Decrypt terminal.", NEON_RED)
 
-    def unlock(self):
+    def unlock(self, game_manager):
         self.is_locked = False
         self.update_color()
         self.pulse_start = pygame.time.get_ticks()
-        if os.path.exists(UNLOCK_SOUND):
-            try:
-                sound = pygame.mixer.Sound(UNLOCK_SOUND)
-                sound.set_volume(0.5)
-                sound.play()
-            except pygame.error:
-                pass
+        game_manager.ui_manager.play_sound(UNLOCK_SOUND, 0.5)
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
@@ -137,8 +131,8 @@ class Terminal(pygame.sprite.Sprite):
         self.puzzle_data = {}
         self.is_locked = True
         self.input_text = ""
-        self.current_message = ""
-        self.default_message = ""
+        self.current_message = []
+        self.default_message = []
         self.unlocks_door = unlocks_door
         self.is_final = is_final
         self.solved_color = NEON_GREEN
@@ -156,13 +150,14 @@ class Terminal(pygame.sprite.Sprite):
         self.update_message()
 
     def update_message(self):
-        self.default_message = (
-            f"Decrypt Sigma Protocol:\n"
-            f"p={self.puzzle_data['p']}, q={self.puzzle_data['q']}\n"
-            f"e={self.puzzle_data['e']}, C={self.puzzle_data['C']}\n"
-            f"Enter plaintext M:"
-        )
-        self.current_message = self.default_message if self.is_locked else "Terminal decrypted! Press ESC."
+        self.default_message = [
+            "Authentication Required",
+            "Decrypt the terminal to access",
+            f"p={self.puzzle_data['p']}, q={self.puzzle_data['q']}",
+            f"e={self.puzzle_data['e']}, C={self.puzzle_data['C']}",
+            "Enter plaintext M:"
+        ]
+        self.current_message = self.default_message if self.is_locked and not self.message_time else ["Terminal decrypted! Press ESC."]
 
     def update(self):
         if pygame.time.get_ticks() - self.last_blink >= 500:
@@ -173,7 +168,7 @@ class Terminal(pygame.sprite.Sprite):
             self.message_time = 0
 
     def interact(self, game_manager):
-        game_manager.ui_manager.play_interact_sound()
+        game_manager.ui_manager.play_sound(INTERACT_SOUND, 0.5)
         game_manager.set_game_state(STATE_PUZZLE_RSA)
         game_manager.set_current_puzzle(self)
         self.input_text = ""
@@ -181,25 +176,25 @@ class Terminal(pygame.sprite.Sprite):
         self.update_message()
 
     def handle_input(self, event, game_manager):
-        if not self.is_locked:
-            return
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 self.check_solution(game_manager)
             elif event.key == pygame.K_BACKSPACE:
                 self.input_text = self.input_text[:-1]
-            elif event.key == pygame.K_p:
+            elif event.key == pygame.K_p and game_manager.game_state == STATE_PUZZLE_RSA:
                 self.show_cheat = not self.show_cheat
-            else:
+            elif event.unicode.isprintable():
                 self.input_text += event.unicode
+                game_manager.ui_manager.play_sound(TERMINAL_TYPING, 0.3)
 
     def check_solution(self, game_manager):
-        if self.solution and self.input_text.strip() == self.solution:
+        if self.solution and self.input_text.strip() == str(self.solution):
             self.is_locked = False
             self.image.fill(self.solved_color)
             self.set_temp_message("Access Granted!", NEON_GREEN)
+            game_manager.ui_manager.play_sound(TERMINAL_SUCCESS, 0.6)
             if self.unlocks_door:
-                self.unlocks_door.unlock()
+                self.unlocks_door.unlock(game_manager)
                 game_manager.set_game_message(f"{self.unlocks_door.name} unlocked!", NEON_ORANGE)
             if self.is_final:
                 game_manager.alarm_on = False
@@ -208,12 +203,13 @@ class Terminal(pygame.sprite.Sprite):
             else:
                 game_manager.set_game_state(STATE_GAMEPLAY)
         else:
-            self.set_temp_message("Incorrect. Try again.", NEON_RED)
+            self.set_temp_message("Incorrect. Try again.", NEON_RED, duration=MESSAGE_DURATION_WRONG)
+            game_manager.ui_manager.play_sound(TERMINAL_ERROR, 0.5)
         self.input_text = ""
 
-    def set_temp_message(self, message, color):
-        self.current_message = message
-        self.message_time = pygame.time.get_ticks() + MESSAGE_DURATION
+    def set_temp_message(self, message, color, duration=MESSAGE_DURATION):
+        self.current_message = [message]
+        self.message_time = pygame.time.get_ticks() + duration
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
@@ -235,19 +231,28 @@ class Terminal(pygame.sprite.Sprite):
         pygame.draw.rect(surface, NEON_CYAN, rect, 3)
         font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_MD)
         message_rect = pygame.Rect(rect.x + 20, rect.y + 30, rect.width - 40, rect.height // 2)
-        y = wrap_text(surface, self.current_message, font, NEON_WHITE, message_rect)
+        if isinstance(self.current_message, list) and len(self.current_message) > 1:  # Default message
+            y = message_rect.y
+            line_spacing = 40
+            for line in self.current_message:
+                text_surface = font.render(line, True, NEON_WHITE)
+                x = rect.centerx - text_surface.get_width() // 2
+                surface.blit(text_surface, (x, y))
+                y += line_spacing
+        else:  # Temporary or solved message
+            message = self.current_message[0] if self.current_message else ""
+            wrap_text(surface, message, font, NEON_WHITE, message_rect)
         if self.is_locked:
             input_rect = pygame.Rect(WIDTH // 4, HEIGHT - 150, WIDTH // 2, 40)
             pygame.draw.rect(surface, NEON_CYAN, input_rect, 2)
             input_text = font.render(self.input_text + ("_" if self.cursor_blink else ""), True, NEON_WHITE)
             surface.blit(input_text, (input_rect.x + 5, input_rect.y + 5))
             if self.show_cheat and self.solution:
-                cheat_font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_SM)
-                cheat_text = cheat_font.render(f"Solution: {self.solution}", True, NEON_YELLOW)
-                surface.blit(cheat_text, (input_rect.x, input_rect.y + 45))
+                # disply one time solution
+                print(f"{self.solution}")
         hint_font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_SM)
-        hint = hint_font.render("ENTER to submit, 'P' for hint, ESC to exit", True, NEON_WHITE)
-        surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, HEIGHT - 80))
+        hint = hint_font.render("ENTER to submit, ESC to exit", True, NEON_WHITE)
+        surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, HEIGHT))
 
     def reset(self):
         self.is_locked = True
@@ -275,10 +280,11 @@ class Room:
         surface.blit(name_text, (WIDTH // 2 - name_text.get_width() // 2, 10))
         self.objects.draw(surface)
         for obj in self.objects:
-            obj.draw(surface)  # Ensure custom draw for labels
+            obj.draw(surface)
 
 class GameManager:
     def __init__(self):
+        pygame.mixer.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
         self.game_state = STATE_MENU
@@ -320,8 +326,13 @@ class GameManager:
 
     def set_game_state(self, state):
         self.game_state = state
-        if state != STATE_MENU:
-            self.ui_manager.stop_menu_music()
+        if state != STATE_MENU and state != STATE_HOW_TO_PLAY and state != STATE_GAME_OVER and state != STATE_WIN_SCREEN:
+            self.ui_manager.stop_music()
+            if state == STATE_GAMEPLAY:
+                self.ui_manager.play_gameplay_ambience()
+        else:
+            self.ui_manager.stop_gameplay_ambience()
+            self.ui_manager.play_menu_music()
 
     def set_current_room(self, room_key):
         self.current_room = self.rooms[room_key]
@@ -344,7 +355,9 @@ class GameManager:
 
     def exit_game(self):
         self.running = False
-        self.ui_manager.stop_menu_music()
+        self.ui_manager.stop_music()
+        self.ui_manager.stop_gameplay_ambience()
+        self.ui_manager.stop_low_oxygen_alert()
 
     def start_final_cutscene(self):
         self.set_game_state(STATE_CUTSCENE_OUTRO)
@@ -368,12 +381,15 @@ class GameManager:
         self.alarm_visible = False
         self.last_alarm_flash = 0
         self.ui_manager.set_message("")
+        self.ui_manager.stop_low_oxygen_alert()
         self.set_game_state(STATE_MENU)
 
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.ui_manager.stop_menu_music()
+                self.ui_manager.stop_music()
+                self.ui_manager.stop_gameplay_ambience()
+                self.ui_manager.stop_low_oxygen_alert()
                 self.running = False
             elif self.game_state == STATE_MENU:
                 self.start_button.handle_event(event)
@@ -422,14 +438,17 @@ class GameManager:
             elif self.game_state in [STATE_GAME_OVER, STATE_WIN_SCREEN]:
                 self.restart_button.handle_event(event)
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.ui_manager.stop_music()
+                    self.ui_manager.stop_gameplay_ambience()
+                    self.ui_manager.stop_low_oxygen_alert()
                     self.running = False
-                    self.ui_manager.stop_menu_music()
 
     def update(self):
         self.ui_manager.update()
         if self.game_state == STATE_GAMEPLAY:
             self.player.update(pygame.key.get_pressed())
             if not self.player.is_alive:
+                self.ui_manager.play_sound(PLAYER_DEATH, 0.6)
                 self.set_game_state(STATE_GAME_OVER)
             if self.alarm_on:
                 current_time = pygame.time.get_ticks()

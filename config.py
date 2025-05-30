@@ -7,21 +7,27 @@ HEIGHT = 540
 FPS = 60
 
 # Colors (Neon Sci-Fi Palette)
-NEON_BLACK = (20, 20, 30)       # Background
-NEON_CYAN = (0, 255, 255)      # Accents, borders
-NEON_GREEN = (0, 255, 128)     # Player, solved terminals
-NEON_RED = (255, 64, 64)       # Terminals, alarms
-NEON_BLUE = (64, 128, 255)     # Locked doors
-NEON_LIGHT_BLUE = (150, 200, 255)  # Unlocked doors
-NEON_YELLOW = (255, 255, 64)   # Cheat text, warnings
-NEON_ORANGE = (255, 165, 64)   # Messages
-NEON_WHITE = (220, 220, 255)   # Text
-ALARM_GLOW = (255, 64, 64, 80) # Semi-transparent alarm effect
-DARK_GLOW = (40, 40, 60)       # UI panels
-GRID_GLOW = (60, 60, 80)       # Room grid lines
-HOLO_GLOW = (0, 255, 255, 50)  # Holographic HUD effect
-PARTICLE_GLOW = (100, 255, 255, 100)  # Menu particle effect
-VIGNETTE_GLOW = (255, 64, 64, 50)  # Low oxygen vignette
+NEON_BLACK = (20, 20, 30)
+NEON_CYAN = (0, 255, 255)
+NEON_GREEN = (0, 255, 128)
+NEON_RED = (255, 64, 64)
+NEON_BLUE = (64, 128, 255)
+NEON_LIGHT_BLUE = (150, 200, 255)
+NEON_YELLOW = (255, 255, 64)
+NEON_ORANGE = (255, 165, 64)
+NEON_WHITE = (220, 220, 255)
+NEON_PURPLE = (128, 0, 255)
+ALARM_GLOW = (255, 64, 64, 80)
+DARK_GLOW = (40, 40, 60)
+DARK_CARBON = (20, 20, 30)
+DARK_RED = (100, 0, 0)
+YELLOW = (255, 255, 0)
+GRID_GLOW = (60, 60, 80)
+HOLO_GLOW = (0, 255, 255, 50)
+PARTICLE_GLOW = (100, 255, 255, 100)
+VIGNETTE_GLOW = (255, 64, 64, 50)
+WHITE = (255, 255, 255)
+CARBON_GRID = (30, 30, 50)
 
 # Game States
 STATE_MENU = "MENU"
@@ -41,34 +47,45 @@ FONT_MEDIUM = os.path.join(FONT_DIR, "Orbitron-Medium.ttf")
 
 # Audio Paths
 AUDIO_DIR = os.path.join("Assets", "Audio")
-MENU_MUSIC = os.path.join(AUDIO_DIR, "ambient_sci_fi.mp3")  # Placeholder
-INTERACT_SOUND = os.path.join(AUDIO_DIR, "interact_beep.mp3")  # Placeholder
-UNLOCK_SOUND = os.path.join(AUDIO_DIR, "unlock_pulse.mp3")  # Placeholder
+MENU_MUSIC = os.path.join(AUDIO_DIR, "ambient_sci_fi.mp3")
+STATION_AMBIENCE = os.path.join(AUDIO_DIR, "station_ambience.mp3")
+CUTSCENE_THEME = os.path.join(AUDIO_DIR, "cutscene_theme.mp3")
+INTERACT_SOUND = os.path.join(AUDIO_DIR, "interact_beep.mp3")
+UNLOCK_SOUND = os.path.join(AUDIO_DIR, "unlock_pulse.mp3")
+TERMINAL_TYPING = os.path.join(AUDIO_DIR, "terminal_typing.mp3")
+TERMINAL_SUCCESS = os.path.join(AUDIO_DIR, "terminal_success.mp3")
+TERMINAL_ERROR = os.path.join(AUDIO_DIR, "terminal_error.mp3")
+LOW_OXYGEN_ALERT = os.path.join(AUDIO_DIR, "low_oxygen_alert.mp3")
+PLAYER_DEATH = os.path.join(AUDIO_DIR, "player_death.mp3")
 
 # Font Sizes
 FONT_SIZE_SM = 12
 FONT_SIZE_MD = 16
-FONT_SIZE_LG = 24
-FONT_SIZE_XL = 36
+FONT_SIZE_LG = 22
+FONT_SIZE_XL = 28
 
 # Game Mechanics
 PLAYER_SPEED = 3
-OXYGEN_DEPLETION = 0.075  # Increased by 50% for challenge
-SUIT_DAMAGE_RATE = 0.015  # Increased by 50% for challenge
-MESSAGE_DURATION = 5000  # 5 seconds
-ALARM_FLASH_INTERVAL = 500  # Milliseconds
-CUTSCENE_CHAR_DELAY = 30    # Milliseconds per character
-DOOR_PULSE_DURATION = 1000  # Milliseconds for unlock animation
-TOOLTIP_FADE_DURATION = 300  # Milliseconds for tooltip fade
+OXYGEN_DEPLETION = 0.2
+SUIT_DAMAGE_RATE = 0.085
+MESSAGE_DURATION = 5000
+MESSAGE_DURATION_WRONG = 6000  # Duration for terminal wrong input message
+ALARM_FLASH_INTERVAL = 500
+CUTSCENE_CHAR_DELAY = 30
+DOOR_PULSE_DURATION = 1000
+TOOLTIP_FADE_DURATION = 300
+OXYGEN_DEPLETION_RATE = 0.05  # Oxygen depletion rate per second
+SUIT_DAMAGE_RATE = 0.01  # Suit damage rate per second
+GLOW_SPEED = 0.05  # Speed of neon glow pulse
 
 # UI Settings
-BUTTON_GLOW_INTENSITY = 50  # Alpha for button hover glow
-PARTICLE_COUNT = 50        # Number of background particles in menu
-PARTICLE_SPEED = 0.5       # Speed of particles
-MESSAGE_FADE_DURATION = 500  # Milliseconds for message fade
-HUD_PANEL_ALPHA = 150      # Transparency of HUD panel (lower for less obstruction)
-MINI_MAP_RADIUS = 60       # Radius of circular mini-map
-VIGNETTE_THRESHOLD = 30    # Oxygen % for vignette effect
+BUTTON_GLOW_INTENSITY = 50
+PARTICLE_COUNT = 50
+PARTICLE_SPEED = 0.5
+MESSAGE_FADE_DURATION = 500
+HUD_PANEL_ALPHA = 150
+MINI_MAP_RADIUS = 60
+VIGNETTE_THRESHOLD = 30
 
 # Cutscene Scripts
 INTRO_CUTSCENE = [
@@ -92,6 +109,7 @@ FINAL_CUTSCENE = [
 
 HOW_TO_PLAY_TEXT = [
     "--- HOW TO PLAY ---",
+    "",
     "Move: Arrow Keys or WASD",
     "Interact: Press 'E' near objects",
     "Solve Puzzles: Calculate M, enter, press ENTER",

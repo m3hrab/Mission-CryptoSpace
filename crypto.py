@@ -53,3 +53,15 @@ class PuzzleGenerator:
                 return {'p': p, 'q': q, 'e': e, 'C': c, 'M_solution': str(m)}
             except ValueError:
                 continue
+            
+    
+# def solve(p, q, e, c):
+#     """find plaintext M."""
+#     n = p * q
+#     phi = (p - 1) * (q - 1)
+#     d = mod_inverse(e, phi)
+#     m = decrypt(c, d, n)
+#     return str(m)
+
+    
+# print(solve(41, 11, 313, 424))

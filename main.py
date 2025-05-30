@@ -5,7 +5,7 @@ from config import FPS
 
 def main():
     pygame.init()
-    pygame.display.set_caption("Crypternity: Martian Decipher")
+    pygame.display.set_caption("Mission CryptoSpace (Crypternity)")
     game = GameManager()
     game.run()
     pygame.quit()
