@@ -1,12 +1,12 @@
 import pygame
 import sys
 from core import GameManager
-from config import FPS
 
 def main():
+    # Initialize Pygame and set up the game window
     pygame.init()
     pygame.display.set_caption("Mission CryptoSpace (Crypternity)")
-    game = GameManager()
+    game = GameManager() 
     game.run()
     pygame.quit()
     sys.exit()

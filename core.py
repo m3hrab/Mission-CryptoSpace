@@ -8,10 +8,13 @@ from helpers import wrap_text
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
+        # player sprite appearance
         self.image = pygame.Surface((25, 25))
         self.image.fill(NEON_GREEN)
         self.rect = self.image.get_rect(topleft=(x, y))
         self.speed = PLAYER_SPEED
+        
+        # health system
         self.oxygen = 100.0
         self.suit_integrity = 100.0
         self.last_oxygen_tick = pygame.time.get_ticks()
@@ -20,6 +23,8 @@ class Player(pygame.sprite.Sprite):
     def update(self, keys):
         if not self.is_alive:
             return
+            
+        # Handle movement input
         moved = False
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.rect.x -= self.speed
@@ -33,17 +38,25 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.rect.y += self.speed
             moved = True
+            
+        # Keep player within room boundaries
         self.rect.left = max(50, self.rect.left)
         self.rect.right = min(WIDTH - 50, self.rect.right)
         self.rect.top = max(50, self.rect.top)
         self.rect.bottom = min(HEIGHT - 50, self.rect.bottom)
+        
+        # Update health every second
         if pygame.time.get_ticks() - self.last_oxygen_tick >= 1000:
             if moved:
+                # Movement damages suit
                 self.suit_integrity -= SUIT_DAMAGE_RATE
                 self.suit_integrity = max(0, self.suit_integrity)
             if self.suit_integrity < 100:
+                # Damaged suit causes oxygen loss
                 self.oxygen -= OXYGEN_DEPLETION
             self.last_oxygen_tick = pygame.time.get_ticks()
+            
+            # Check for death conditions
             if self.oxygen <= 0 or self.suit_integrity <= 0:
                 self.is_alive = False
 
@@ -51,6 +64,7 @@ class Player(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect)
 
     def reset(self):
+        # Reset player to starting state
         self.rect.x = WIDTH // 2
         self.rect.y = HEIGHT // 2
         self.oxygen = 100.0
@@ -61,15 +75,20 @@ class Player(pygame.sprite.Sprite):
 class Door(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, target_room, target_x, target_y):
         super().__init__()
+        # Create door appearance
         self.image = pygame.Surface((width, height))
         self.image.fill(NEON_BLUE)
         self.rect = self.image.get_rect(topleft=(x, y))
         self.name = f"Door to {target_room.replace('_', ' ').title()}"
+        
+        # Door properties
         self.target_room = target_room
         self.target_x = target_x
         self.target_y = target_y
         self.is_locked = True
         self.unlocked_color = NEON_LIGHT_BLUE
+        
+        # Visual effects
         self.pulse_alpha = 0
         self.pulse_start = 0
         self.font = pygame.font.Font(FONT_MEDIUM, FONT_SIZE_SM)
@@ -78,6 +97,7 @@ class Door(pygame.sprite.Sprite):
         self.image.fill(self.unlocked_color if not self.is_locked else NEON_BLUE)
 
     def update(self):
+        # Handle unlock pulse animation
         if not self.is_locked and self.pulse_start:
             elapsed = pygame.time.get_ticks() - self.pulse_start
             if elapsed < DOOR_PULSE_DURATION:
@@ -89,6 +109,7 @@ class Door(pygame.sprite.Sprite):
     def interact(self, player, game_manager):
         game_manager.ui_manager.play_sound(INTERACT_SOUND, 0.5)
         if not self.is_locked:
+            # Move player through door
             game_manager.set_game_message("Door Unlocked! Transitioning...", NEON_ORANGE)
             if self.target_room == "win_room":
                 game_manager.start_final_cutscene()
@@ -100,6 +121,7 @@ class Door(pygame.sprite.Sprite):
             game_manager.set_game_message("Door Locked. Decrypt terminal.", NEON_RED)
 
     def unlock(self, game_manager):
+        # Unlock door and start visual effects
         self.is_locked = False
         self.update_color()
         self.pulse_start = pygame.time.get_ticks()
@@ -107,14 +129,19 @@ class Door(pygame.sprite.Sprite):
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
+        
+        # Draw pulse effect when unlocked
         if self.pulse_alpha > 0:
             pulse_surface = pygame.Surface((self.rect.width + 10, self.rect.height + 10), pygame.SRCALPHA)
             pygame.draw.rect(pulse_surface, (0, 255, 255, self.pulse_alpha), (5, 5, self.rect.width, self.rect.height), border_radius=5)
             surface.blit(pulse_surface, (self.rect.x - 5, self.rect.y - 5))
+        
+        # Draw door label
         label = self.font.render(self.name, True, NEON_WHITE)
         surface.blit(label, (self.rect.centerx - label.get_width() // 2, self.rect.top - 20))
 
     def reset(self):
+        # Reset door to locked state
         self.is_locked = True
         self.update_color()
         self.pulse_alpha = 0
@@ -157,8 +184,11 @@ class Terminal(pygame.sprite.Sprite):
             f"e={self.puzzle_data['e']}, C={self.puzzle_data['C']}",
             "Enter plaintext M:"
         ]
-        self.current_message = self.default_message if self.is_locked and not self.message_time else ["Terminal decrypted! Press ESC."]
-
+        if self.is_locked:
+            self.current_message = self.default_message
+        else:
+            self.current_message = ["Terminal decrypted! Press ESC to exit."]
+            
     def update(self):
         if pygame.time.get_ticks() - self.last_blink >= 500:
             self.cursor_blink = not self.cursor_blink
@@ -204,7 +234,7 @@ class Terminal(pygame.sprite.Sprite):
                 game_manager.set_game_state(STATE_GAMEPLAY)
         else:
             self.set_temp_message("Incorrect. Try again.", NEON_RED, duration=MESSAGE_DURATION_WRONG)
-            game_manager.ui_manager.play_sound(TERMINAL_ERROR, 0.5)
+            game_manager.ui_manager.play_sound(TERMINAL_ERROR, 5)
         self.input_text = ""
 
     def set_temp_message(self, message, color, duration=MESSAGE_DURATION):

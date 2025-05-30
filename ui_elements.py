@@ -8,6 +8,7 @@ class Particle:
         self.reset()
 
     def reset(self):
+        # Set random position and movement
         self.x = random.randint(0, WIDTH)
         self.y = random.randint(0, HEIGHT)
         self.vx = random.uniform(-PARTICLE_SPEED, PARTICLE_SPEED)
@@ -16,12 +17,15 @@ class Particle:
         self.alpha = random.randint(50, 100)
 
     def update(self):
+        # Move particle
         self.x += self.vx
         self.y += self.vy
+        # Reset if particle goes off screen
         if self.x < 0 or self.x > WIDTH or self.y < 0 or self.y > HEIGHT:
             self.reset()
 
     def draw(self, surface):
+        # Draw glowing particle
         particle_surface = pygame.Surface((self.size * 2, self.size * 2), pygame.SRCALPHA)
         pygame.draw.circle(particle_surface, PARTICLE_GLOW, (self.size, self.size), self.size)
         surface.blit(particle_surface, (int(self.x) - self.size, int(self.y) - self.size))
@@ -35,6 +39,7 @@ class Button(pygame.sprite.Sprite):
         self.base_color = DARK_GLOW
         self.text_color = NEON_WHITE
         self.action = action
+        # Animation properties
         self.is_hovered = False
         self.glow_alpha = 0
         self.glow_speed = 5
@@ -43,31 +48,38 @@ class Button(pygame.sprite.Sprite):
         self.click_time = 0
 
     def update(self):
+        # Update glow effect based on hover
         if self.is_hovered:
             self.glow_alpha = min(self.glow_alpha + self.glow_speed, BUTTON_GLOW_INTENSITY)
         else:
             self.glow_alpha = max(self.glow_alpha - self.glow_speed, 0)
+        # Handle click animation
         if self.click_time and pygame.time.get_ticks() - self.click_time < self.click_duration:
             self.click_scale = 0.95
         else:
             self.click_scale = 1.0
 
     def draw(self, surface):
+        # Calculate scaled rect for click animation
         scaled_rect = pygame.Rect(
             self.rect.x + self.rect.width * (1 - self.click_scale) / 2,
             self.rect.y + self.rect.height * (1 - self.click_scale) / 2,
             self.rect.width * self.click_scale,
             self.rect.height * self.click_scale
         )
+        # Draw glow effect
         glow_surface = pygame.Surface((self.rect.width + 20, self.rect.height + 20), pygame.SRCALPHA)
         pygame.draw.rect(glow_surface, (0, 255, 255, int(self.glow_alpha)), (10, 10, self.rect.width, self.rect.height), border_radius=10)
         surface.blit(glow_surface, (self.rect.x - 10, self.rect.y - 10))
+        # Draw button background and border
         pygame.draw.rect(surface, self.base_color, scaled_rect, border_radius=5)
         pygame.draw.rect(surface, NEON_CYAN, scaled_rect, 2, border_radius=5)
+        # Draw button text
         text_surface = self.font.render(self.text, True, self.text_color)
         surface.blit(text_surface, (scaled_rect.centerx - text_surface.get_width() // 2, scaled_rect.centery - text_surface.get_height() // 2))
 
     def handle_event(self, event):
+        # Handle mouse events
         if event.type == pygame.MOUSEMOTION:
             self.is_hovered = self.rect.collidepoint(event.pos)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.is_hovered and self.action:

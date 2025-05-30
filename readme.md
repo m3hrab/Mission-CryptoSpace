@@ -18,43 +18,43 @@ As a last hope, you pick up a faint signal: the Earth lander has crashed, but it
 ## Development Roadmap
 
 ### Phase 1: Main Prototype
-- [ ] Implement core RSA encryption/decryption mechanics
-- [ ] Create basic room navigation system
-- [ ] Develop door unlocking mechanism using decrypted codes
-- [ ] Build fundamental puzzle structure for key fragments
-- [ ] Establish basic player inventory system
-- [ ] Create simple terminal interface for code input
+- [x] Implement core RSA encryption/decryption mechanics
+- [x] Create basic room navigation system
+- [x] Develop door unlocking mechanism using decrypted codes
+- [x] Build fundamental puzzle structure for key fragments
+- [x] Establish basic player inventory system
+- [x] Create simple terminal interface for code input
 
 ### Phase 2: Complete Playable Game
-- [ ] Design and implement main menu with start/options/quit
-- [ ] Create comprehensive "How to Play" tutorial section
-- [ ] Develop game over screen with restart functionality
-- [ ] Build victory screen with completion statistics
-- [ ] Add save/load game functionality
-- [ ] Implement multiple difficulty levels
-- [ ] Create pause menu system
+- [x] Design and implement main menu with start/options/quit
+- [x] Create comprehensive "How to Play" tutorial section
+- [x] Develop game over screen with restart functionality
+- [x] Build victory screen with completion statistics
+- [x] Add save/load game functionality
+- [x] Implement multiple difficulty levels
+- [x] Create pause menu system
 
 ### Phase 3: Audio & UI Polish
-- [ ] Add ambient space station sound effects
-- [ ] Implement button click and interaction sounds
-- [ ] Create alarm and emergency audio cues
-- [ ] Design smooth HUD animations for health/oxygen meters
-- [ ] Add text typing animation for terminal messages
-- [ ] Implement smooth scene transitions between rooms
-- [ ] Create visual feedback for successful/failed decryption
+- [x] Add ambient space station sound effects
+- [x] Implement button click and interaction sounds
+- [x] Create alarm and emergency audio cues
+- [x] Design smooth HUD animations for health/oxygen meters
+- [x] Add text typing animation for terminal messages
+- [x] Implement smooth scene transitions between rooms
+- [x] Create visual feedback for successful/failed decryption
 
 ### Phase 4: Visual Enhancement
-- [ ] Develop opening cutscene showing station breach
-- [ ] Create victory cutscene for successful escape
-- [ ] Design detailed UI mockups and implement
-- [ ] Add particle effects for terminal interactions
-- [ ] Implement lighting effects for atmospheric tension
-- [ ] Create visual indicators for interactive objects
+- [x] Develop opening cutscene showing station breach
+- [x] Create victory cutscene for successful escape
+- [x] Design detailed UI mockups and implement
+- [x] Add particle effects for terminal interactions
+- [x] Implement lighting effects for atmospheric tension
+- [x] Create visual indicators for interactive objects
 
 ### Phase 5: Optimization & Testing
-- [ ] Optimize code performance and memory usage
-- [ ] Conduct playtesting with target audience
-- [ ] Fix bugs and balance puzzle difficulty
-- [ ] Test cross-platform compatibility
-- [ ] Finalize build configuration
-- [ ] Prepare final release package
+- [x] Optimize code performance and memory usage
+- [x] Conduct playtesting with target audience
+- [x] Fix bugs and balance puzzle difficulty
+- [x] Test cross-platform compatibility
+- [x] Finalize build configuration
+- [x] Prepare final release package
